@@ -1,5 +1,3 @@
-#TODO: Import your dependencies.
-#For instance, below are some dependencies you might need if you are using Pytorch
 import numpy as np
 import torch
 import torch.nn as nn
@@ -53,7 +51,6 @@ def test(model, test_loader, criterion, hook):
         "\nTest set: Average loss: {:.4f}, Accuracy: {}\n".format(
             total_loss, total_acc)
         )
-    )
     
 
 def train(model, trainloader, testloader, criterion, optimizer, hook):
