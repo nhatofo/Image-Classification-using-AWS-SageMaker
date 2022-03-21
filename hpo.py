@@ -1,3 +1,5 @@
+#TODO: Import your dependencies.
+#For instance, below are some dependencies you might need if you are using Pytorch
 import numpy as np
 import torch
 import torch.nn as nn
@@ -5,156 +7,200 @@ import torch.optim as optim
 import torchvision
 import torchvision.models as models
 import torchvision.transforms as transforms
-
+import torch.nn.functional as F
+from torchvision import datasets, transforms, models
+from collections import OrderedDict
 import argparse
-import logging
 import os
+import logging
 import sys
 from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# Setting up some basic configs for enabling logging
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
-def test(model, test_loader, criterion, device, epoch_no):
-    logger.info(f"Epoch: {epoch_no} - Testing Model on Complete Testing Dataset")
+def test(model, test_loader, criterion):
+    '''
+    TODO: Complete this function that can take a model and a 
+          testing data loader and will get the test accuray/loss of the model
+          Remember to include any debugging/profiling hooks that you might need
+    '''
     model.eval()
-    running_loss = 0
-    running_corrects = 0
-    with torch.no_grad():
-        for inputs, labels in test_loader:
-            inputs=inputs.to(device)
-            labels=labels.to(device)
-            outputs=model(inputs)
-            loss=criterion(outputs, labels)
-            pred = outputs.argmax(dim=1, keepdim=True)
-            running_loss += loss.item() * inputs.size(0) #calculate running loss
-            running_corrects += pred.eq(labels.view_as(pred)).sum().item() #calculate running corrects
+    running_loss=0
+    running_corrects=0
+    
+    for inputs, labels in test_loader:
+        outputs=model(inputs)
+        loss=criterion(outputs, labels)
+        _, preds = torch.max(outputs, 1)
+        running_loss += loss.item() * inputs.size(0)
+        running_corrects += torch.sum(preds == labels.data)
 
-        total_loss = running_loss / len(test_loader.dataset)
-        total_acc = running_corrects/ len(test_loader.dataset)
-        logger.info( "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-            total_loss, running_corrects, len(test_loader.dataset), 100.0 * total_acc
-        ))
+    total_loss = running_loss // len(test_loader)
+    total_acc = running_corrects.double() // len(test_loader)
+    
+    logger.info(
+        "\nTest set: Average loss: {:.4f}, Accuracy: {}\n".format(
+            total_loss, total_acc)
+        )
+    
 
-def train(model, train_loader, criterion, optimizer, device, epoch_no):
-    logger.info(f"Epoch: {epoch_no} - Training Model on Complete Training Dataset" )
-    model.train()
+def train(model, trainloader, testloader, loss_criterion, optimizer):
+    '''
+    TODO: Complete this function that can take a model and
+          data loaders for training and will get train the model
+          Remember to include any debugging/profiling hooks that you might need
+    '''
+    epochs = 5
     running_loss = 0
-    running_corrects = 0
-    running_samples = 0
-    for inputs, labels in train_loader:
-        inputs = inputs.to(device)
-        labels = labels.to(device)
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        pred = outputs.argmax(dim=1,  keepdim=True)
-        running_loss += loss.item() * inputs.size(0) #calculate running loss
-        running_corrects += pred.eq(labels.view_as(pred)).sum().item() #calculate running corrects
-        running_samples += len(inputs) #keep count of running samples
-        loss.backward()
-        optimizer.step()
-        if running_samples % 500 == 0:
-            logger.info("\nTrain set:  [{}/{} ({:.0f}%)]\t Loss: {:.2f}\tAccuracy: {}/{} ({:.2f}%)".format(
-                running_samples,
-                len(train_loader.dataset),
-                100.0 * (running_samples / len(train_loader.dataset)),
-                loss.item(),
-                running_corrects,
-                running_samples,
-                100.0*(running_corrects/ running_samples)
-            ))
-    total_loss = running_loss / len(train_loader.dataset)
-    total_acc = running_corrects/ len(train_loader.dataset)
-    logger.info( "\nTrain set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-        total_loss, running_corrects, len(train_loader.dataset), 100.0 * total_acc
-    ))   
-    return model
+    correct_pred = 0
+
+    for e in range(epochs):
+    
+        # Model in training mode, dropout is on
+        model.train()
+        
+        for inputs, labels in trainloader:
+            optimizer.zero_grad()
+            output = model(inputs)
+            loss = loss_criterion(output, labels)
+            loss.backward()
+            optimizer.step()
+            
+            # Training Loss
+            _, preds = torch.max(output, 1)
+            running_loss += loss.item() * inputs.size(0)
+            correct_pred += torch.sum(preds == labels.data)
+
+        epoch_loss = running_loss // len(trainloader)
+        epoch_acc = correct_pred // len(trainloader)
+        
+        logger.info("\nEpoch: {}/{}.. ".format(e+1, epochs))
+        logger.info("Training Loss: {:.4f}".format(epoch_loss))
+        logger.info("Training Accuracy: {:.4f}".format(epoch_acc))
+        
+            
+        test(model, testloader, loss_criterion)    
+    
+    return model 
     
 def net():
-    model = models.resnet50(pretrained = True) #Use a pretrained resnet50 model with 50 layers
-    
+    '''
+    TODO: Complete this function that initializes your model
+          Remember to use a pretrained model
+    '''
+    #pretrained network Resenet50 is loaded from torchvision.models
+    model = models.resnet50(pretrained=True)
+
+    # Freeze all the parameters in the feature network 
     for param in model.parameters():
-        param.requires_grad = False #Freeze all the Conv layers
-    
-    num_features = model.fc.in_features
-    model.fc = nn.Sequential( nn.Linear( num_features, 256), #Add two fully connected layers
-                             nn.ReLU(inplace = True),
-                             nn.Linear(256, 133),
-                             nn.ReLU(inplace = True) # output should have 133 nodes as we have 133 classes of dog breeds
-                            )
+        param.requires_grad = False
+
+    # define the architecture for classifier and Set the classifier to model
+    model.fc = nn.Sequential(
+                   nn.Linear(2048, 150),
+                   nn.ReLU(inplace=True),
+                   nn.Linear(150, 133))
+
+     
     return model
 
 def create_data_loaders(data, batch_size):
+    '''
+    This is an optional function that you may or may not need to implement
+    depending on whether you need to use data loaders or not
+    '''
+    train_data_path = os.path.join(data, 'train')
+    test_data_path = os.path.join(data, 'test')
+    validation_data_path=os.path.join(data, 'valid')
     
-    train_dataset_path = os.path.join(data, "train")
-    test_dataset_path = os.path.join(data, "test")
+    train_transform = transforms.Compose([transforms.RandomHorizontalFlip(),
+                                       transforms.Resize(256),
+                                       transforms.CenterCrop(224),
+                                       transforms.ToTensor(),
+                                       transforms.Normalize([0.485, 0.456, 0.406], 
+                                                            [0.229, 0.224, 0.225])])
+                                                            
+    test_transform = transforms.Compose([transforms.Resize(256),
+                                      transforms.CenterCrop(224),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize([0.485, 0.456, 0.406], 
+                                                           [0.229, 0.224, 0.225])])
+
     
-    training_transform = transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.Resize(256),
-        transforms.RandomResizedCrop((224, 224)),
-        transforms.ToTensor() ])
+    train_data = torchvision.datasets.ImageFolder(root=train_data_path, transform=train_transform)
+    train_data_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True)
+
+    test_data = torchvision.datasets.ImageFolder(root=test_data_path, transform=test_transform)
+    test_data_loader  = torch.utils.data.DataLoader(test_data, batch_size=batch_size)
+
+    validation_data = torchvision.datasets.ImageFolder(root=validation_data_path, transform=test_transform)
+    validation_data_loader  = torch.utils.data.DataLoader(validation_data, batch_size=batch_size) 
     
-    testing_transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomResizedCrop((224, 224)),
-        transforms.ToTensor() ])
-    
-    train_dataset = torchvision.datasets.ImageFolder(root=train_dataset_path, transform=training_transform)    
-    test_dataset = torchvision.datasets.ImageFolder(root=test_dataset_path, transform=testing_transform)
-    
-    train_data_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_data_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size )
-    
-    return train_data_loader, test_data_loader
+    return train_data_loader, test_data_loader, validation_data_loader
 
 def main(args):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Running on Device {device}")
-    logger.info(f"Hyperparameters : LR: {args.lr},  Eps: {args.eps}, Weight-decay: {args.weight_decay}, Batch Size: {args.batch_size}, Epoch: {args.epochs}")
-    logger.info(f"Data Dir Path: {args.data_dir}")
-    logger.info(f"Model Dir  Path: {args.model_dir}")
-    logger.info(f"Output Dir  Path: {args.output_dir}")
     
+        
+    train_loader, test_loader, validation_loader=create_data_loaders(args.data, args.batchsize)
+    
+    
+    '''
+    TODO: Initialize a model by calling the net function
+    '''
     model=net()
-    model = model.to(device)
     
-    train_data_loader, test_data_loader = create_data_loaders(args.data_dir, args.batch_size )
-    
+    '''
+    TODO: Create your loss and optimizer
+    '''
     loss_criterion = nn.CrossEntropyLoss()
-    #Using AdamW as it yieds usually better performance then Adam in most cases due to the way it uses weight decay in computations
-    optimizer = optim.AdamW(model.fc.parameters(), lr=args.lr, eps= args.eps, weight_decay = args.weight_decay)
-
-    #Adding in the epoch to train and test/validate for the same epoch at the same time.
-    for epoch_no in range(1, args.epochs +1 ):
-        logger.info(f"Epoch {epoch_no} - Starting Training phase.")
-        model=train(model, train_data_loader, loss_criterion, optimizer, device, epoch_no)
-        logger.info(f"Epoch {epoch_no} - Starting Testing phase.")
-        test(model, test_data_loader, loss_criterion, device, epoch_no)
+    optimizer = optim.Adam(model.fc.parameters(), lr=args.lr)
     
-    logger.info("Starting to Save the Model")
-    torch.save(model.state_dict(), os.path.join(args.model_dir, 'model.pth'))
-    logger.info("Completed Saving the Model")
+    '''
+    TODO: Call the train function to start training your model
+    Remember that you will need to set up a way to get training data from S3
+    '''
+    logger.info("Start Model Training")
+    model=train(model, train_loader, validation_loader, loss_criterion, optimizer)
+    
+    '''
+    TODO: Test the model to see its accuracy
+    '''
+    logger.info("Testing Model")
+    test(model, test_loader, loss_criterion)
+    
+    '''
+    TODO: Save the trained model
+    '''
+    logger.info("Saving Model")
+    torch.save(model.cpu().state_dict(), os.path.join(args.model_dir, "model.pth"))
 
 if __name__=='__main__':
+    
     parser=argparse.ArgumentParser()
     '''
-    Adding all the hyperparameters needed to use to train your model.
+    TODO: Specify all the hyperparameters you need to use to train your model.
     '''
-    parser.add_argument(  "--batch_size", type = int, default = 64, metavar = "N", help = "input batch size for training (default: 64)" )
-    parser.add_argument( "--epochs", type=int, default=2, metavar="N", help="number of epochs to train (default: 2)"    )
-    parser.add_argument( "--lr", type = float, default = 0.1, metavar = "LR", help = "learning rate (default: 1.0)" )
-    parser.add_argument( "--eps", type=float, default=1e-8, metavar="EPS", help="eps (default: 1e-8)" )
-    parser.add_argument( "--weight_decay", type=float, default=1e-2, metavar="WEIGHT-DECAY", help="weight decay coefficient (default 1e-2)" )
-                        
-    # Using sagemaker OS Environ's channels to locate training data, model dir and output dir to save in S3 bucket
-    parser.add_argument('--data_dir', type=str, default=os.environ['SM_CHANNEL_TRAINING'])
+    
+    parser.add_argument(
+        "--batchsize",
+        type=int,
+        default=64,
+        metavar="N",
+        help="input batch size for training (default: 64)",
+    )
+    
+    parser.add_argument(
+        "--lr", type=float, default=0.1, metavar="LR", help="learning rate (default: 1.0)"
+    )
+    
+    parser.add_argument('--data', type=str, default=os.environ['SM_CHANNEL_TRAINING'])
     parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])
     parser.add_argument('--output_dir', type=str, default=os.environ['SM_OUTPUT_DATA_DIR'])
-    args=parser.parse_args()
     
+    args = parser.parse_args()
+
     main(args)
