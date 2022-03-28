@@ -41,14 +41,14 @@ Pytorch AWS Instance
 
 The `hpo.py` script is used to perform hyperparameter tuning.
 
-![Hyperparameters Tuning](images/hipper_jobs.jpeg "Hyperparameters Tuning") ![Hyperparameters](images/tunnings.jpeg "Hyperparameters")
+![Hyperparameters Tuning](images/hipper_jobs.jpg "Hyperparameters Tuning") ![Hyperparameters](images/tunnings.jpg "Hyperparameters")
 
 ###Training Jobs
-![Training Jobs](images/training_jobs.jpeg "Training Jobs")
+![Training Jobs](images/training_jobs.jpg "Training Jobs")
 
 ## Debugging and Profiling
 The Graphical representation of the Cross Entropy Loss is shown below.
-![Cross Entropy Loss](images/graph.jpeg "Cross Entropy Loss")
+![Cross Entropy Loss](images/graph.jpg "Cross Entropy Loss")
 
 Is there some anomalous behaviour in your debugging output? If so, what is the error and how will you fix it?
 - There is no smooth output line and there are different highs and lows for the batch sets.
@@ -67,5 +67,5 @@ The profiler report can be found [here](profiler_report/profiler-report.html).
     1. Using the Predictor Object 
     2. Using the boto3 client.
   
-![End Point Deployment](images/endpoint.jpeg "End Point")
+![End Point Deployment](images/endpoint.jpg "End Point")
 
