@@ -41,7 +41,7 @@ Pytorch AWS Instance
 
 The `hpo.py` script is used to perform hyperparameter tuning.
 
-![Hyperparameters Tuning](images/Hyperparameter_Tuning_Job.jpeg "Hyperparameters Tuning") ![Hyperparameters](images/tunnings.jpeg "Hyperparameters")
+![Hyperparameters Tuning](images/hipper_jobs.jpeg "Hyperparameters Tuning") ![Hyperparameters](images/tunnings.jpeg "Hyperparameters")
 
 ###Training Jobs
 ![Training Jobs](images/training_jobs.jpeg "Training Jobs")
@@ -59,7 +59,6 @@ Is there some anomalous behaviour in your debugging output? If so, what is the e
 ### Profiler Output
 The profiler report can be found [here](profiler_report/profiler-report.html).
 
-![Events](images/Events%20Logging.png "Events Bridge")
 ## Model Deployment
 - Model was deployed to a "ml.m5.large" instance type and "endpoint_inference.py" script is used to setup and deploy our working endpoint.
 - For testing purposes ,few test images are stored in the "testImages" folder.
