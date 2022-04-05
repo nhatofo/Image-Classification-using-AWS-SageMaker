@@ -65,7 +65,10 @@ The profiler report can be found [here](profiler_report/profiler-report.html).
 - Those images are fed to the endpoint for inference/
 - The inference is performed using both the approaches. 
     1. Using the Predictor Object 
-    2. Using the boto3 client.
+
+###Training Jobs
+![Inference Response](images/responce.jpg "Inference Response")
+
   
 ![End Point Deployment](images/endpoint.jpg "End Point")
 
