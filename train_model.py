@@ -3,22 +3,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
-from   torchvision import datasets, transforms
+from torchvision import datasets, transforms
 import argparse
 import smdebug.pytorch as smd
 
-import argparse
-import logging
-import os
-import sys
 # Some images fail to load...
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-# Configuration for Logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def test(model, test_loader, criterion, hook):
@@ -88,6 +79,7 @@ def create_data_loaders(data_train, data_test, batch_size):
         torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True),
         torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False))
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch-size", type=int, default=64, metavar="N", help="input batch size for training (default: 64)")
@@ -120,3 +112,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
