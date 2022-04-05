@@ -69,6 +69,6 @@ The profiler report can be found [here](profiler_report/profiler-report.html).
 ### Inference Response
 ![Inference Response](images/responce.jpg "Inference Response")
 
-  
+### Model Dndpoint
 ![End Point Deployment](images/endpoint.jpg "End Point")
 
