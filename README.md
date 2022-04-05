@@ -66,7 +66,7 @@ The profiler report can be found [here](profiler_report/profiler-report.html).
 - The inference is performed using both the approaches. 
     1. Using the Predictor Object 
 
-###Training Jobs
+### Inference Response
 ![Inference Response](images/responce.jpg "Inference Response")
 
   
